@@ -1,5 +1,5 @@
 name: prim-array
-version: 0.1
+version: 0.2
 synopsis: Primitive byte array with type variable
 homepage: https://github.com/andrewthad/prim-array#readme
 license: BSD3
@@ -16,6 +16,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     Data.Primitive.PrimArray
+    Data.Primitive.PrimRef
   build-depends:
       base >= 4.9 && < 5
     , primitive >= 0.6 && < 0.7
