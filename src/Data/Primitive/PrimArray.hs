@@ -26,6 +26,7 @@ module Data.Primitive.PrimArray
     -- * Information
   , sameMutablePrimArray
   , getSizeofMutablePrimArray
+  , sizeofPrimArray
   ) where
 
 import GHC.Prim
@@ -154,3 +155,8 @@ unsafeThawPrimArray (PrimArray arr#)
 indexPrimArray :: forall a. Prim a => PrimArray a -> Int -> a
 {-# INLINE indexPrimArray #-}
 indexPrimArray (PrimArray arr#) (I# i#) = indexByteArray# arr# i#
+
+sizeofPrimArray :: forall a. Prim a => PrimArray a -> Int
+{-# INLINE sizeofPrimArray #-}
+sizeofPrimArray (PrimArray arr#) = I# (quotInt# (sizeofByteArray# arr#) (sizeOf# (undefined :: a)))
+
