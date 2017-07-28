@@ -12,6 +12,7 @@ module Data.Primitive.PrimArray
   , MutablePrimArray(..)
     -- * Allocation
   , newPrimArray
+  , emptyPrimArray
     -- * Element Access
   , readPrimArray
   , writePrimArray
