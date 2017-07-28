@@ -34,6 +34,7 @@ import GHC.Exts (isTrue#)
 import GHC.Int
 import Data.Primitive
 import Control.Monad.Primitive
+import Control.Monad.ST
 import qualified Data.Primitive.Types as PT
 
 -- | Primitive arrays
@@ -41,6 +42,25 @@ data PrimArray a = PrimArray ByteArray#
 
 -- | Mutable primitive arrays associated with a primitive state token
 data MutablePrimArray s a = MutablePrimArray (MutableByteArray# s)
+
+-- It is actually possible to write this without the Prim constraint
+-- on the type variable a. You just copy the byte arrays using
+-- more primitive operations.
+instance Prim a => Monoid (PrimArray a) where
+  mempty = emptyPrimArray
+  mappend a b = runST $ do
+    let szA = sizeofPrimArray a
+    let szB = sizeofPrimArray b
+    c <- newPrimArray (szA + szB)
+    copyPrimArray c 0 a 0 szA
+    copyPrimArray c szA b 0 szB
+    unsafeFreezePrimArray c
+
+emptyPrimArray :: PrimArray a
+{-# NOINLINE emptyPrimArray #-}
+emptyPrimArray = runST $ primitive $ \s0# -> case newByteArray# 0# s0# of
+  (# s1#, arr# #) -> case unsafeFreezeByteArray# arr# s1# of
+    (# s2#, arr'# #) -> (# s2#, PrimArray arr'# #)
 
 newPrimArray :: forall m a. (PrimMonad m, Prim a) => Int -> m (MutablePrimArray (PrimState m) a)
 {-# INLINE newPrimArray #-}
