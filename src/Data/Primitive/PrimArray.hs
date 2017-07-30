@@ -24,6 +24,8 @@ module Data.Primitive.PrimArray
   , copyPrimArray
   , copyMutablePrimArray
   , copyPrimArrayToPtr
+  , copyPtrToMutablePrimArray
+  , copyPtrToPrimArray
   , setPrimArray
     -- * Information
   , sameMutablePrimArray
@@ -131,17 +133,40 @@ copyPrimArray (MutablePrimArray dst#) (I# doff#) (PrimArray src#) (I# soff#) (I#
 -- | Copy a slice of an immutable primitive array to an address.
 -- The offset and length are given in elements of type @a@.
 copyPrimArrayToPtr :: forall m a. (PrimMonad m, Prim a)
-              => Ptr a                            -- ^ destination pointer
-              -> PrimArray a                      -- ^ source array
-              -> Int                              -- ^ offset into source array
-              -> Int                              -- ^ number of prims to copy
-              -> m ()
+  => Ptr a                            -- ^ destination pointer
+  -> PrimArray a                      -- ^ source array
+  -> Int                              -- ^ offset into source array
+  -> Int                              -- ^ number of prims to copy
+  -> m ()
 {-# INLINE copyPrimArrayToPtr #-}
 copyPrimArrayToPtr (Ptr addr#) (PrimArray ba#) (I# soff#) (I# n#) =
     primitive (\ s# ->
         let s'# = copyByteArrayToAddr# ba# (soff# *# siz#) addr# (n# *# siz#) s#
         in (# s'#, () #))
   where siz# = sizeOf# (undefined :: a)
+
+copyPtrToMutablePrimArray :: forall m a. (PrimMonad m, Prim a)
+  => MutablePrimArray (PrimState m) a
+  -> Int
+  -> Ptr a
+  -> Int
+  -> m ()
+{-# INLINE copyPtrToMutablePrimArray #-}
+copyPtrToMutablePrimArray (MutablePrimArray ba#) (I# doff#) (Ptr addr#) (I# n#) = 
+  primitive (\ s# ->
+      let s'# = copyAddrToByteArray# addr# ba# (doff# *# siz#) (n# *# siz#) s#
+      in (# s'#, () #))
+  where siz# = sizeOf# (undefined :: a)
+
+copyPtrToPrimArray :: forall a. Prim a
+  => Ptr a
+  -> Int
+  -> PrimArray a
+{-# INLINE copyPtrToPrimArray #-}
+copyPtrToPrimArray ptr len = runST $ do
+  arr <- newPrimArray len
+  copyPtrToMutablePrimArray arr 0 ptr len
+  unsafeFreezePrimArray arr
 
 -- | Fill a slice of a mutable byte array with a value.
 setPrimArray
