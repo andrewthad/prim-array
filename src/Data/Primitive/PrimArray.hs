@@ -23,6 +23,7 @@ module Data.Primitive.PrimArray
     -- * Block Operations
   , copyPrimArray
   , copyMutablePrimArray
+  , copyPrimArrayToPtr
   , setPrimArray
     -- * Information
   , sameMutablePrimArray
@@ -33,6 +34,7 @@ module Data.Primitive.PrimArray
 import GHC.Prim
 import GHC.Exts (isTrue#)
 import GHC.Int
+import GHC.Ptr
 import Data.Primitive
 import Control.Monad.Primitive
 import Control.Monad.ST
@@ -125,6 +127,21 @@ copyPrimArray (MutablePrimArray dst#) (I# doff#) (PrimArray src#) (I# soff#) (I#
       (doff# *# (sizeOf# (undefined :: a)))
       (n# *# (sizeOf# (undefined :: a)))
     )
+
+-- | Copy a slice of an immutable primitive array to an address.
+-- The offset and length are given in elements of type @a@.
+copyPrimArrayToPtr :: forall m a. (PrimMonad m, Prim a)
+              => Ptr a                            -- ^ destination pointer
+              -> PrimArray a                      -- ^ source array
+              -> Int                              -- ^ offset into source array
+              -> Int                              -- ^ number of prims to copy
+              -> m ()
+{-# INLINE copyPrimArrayToPtr #-}
+copyPrimArrayToPtr (Ptr addr#) (PrimArray ba#) (I# soff#) (I# n#) =
+    primitive (\ s# ->
+        let s'# = copyByteArrayToAddr# ba# (soff# *# siz#) addr# (n# *# siz#) s#
+        in (# s'#, () #))
+  where siz# = sizeOf# (undefined :: a)
 
 -- | Fill a slice of a mutable byte array with a value.
 setPrimArray
