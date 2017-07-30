@@ -48,6 +48,12 @@ data PrimArray a = PrimArray ByteArray#
 -- | Mutable primitive arrays associated with a primitive state token
 data MutablePrimArray s a = MutablePrimArray (MutableByteArray# s)
 
+instance (Eq a, Prim a) => Eq (PrimArray a) where
+  a1 == a2 = sizeofPrimArray a1 == sizeofPrimArray a2 && loop (sizeofPrimArray a1 - 1)
+   where 
+   loop !i | i < 0 = True
+           | otherwise = indexPrimArray a1 i == indexPrimArray a2 i && loop (i-1)
+
 -- It is actually possible to write this without the Prim constraint
 -- on the type variable a. You just copy the byte arrays using
 -- more primitive operations.
