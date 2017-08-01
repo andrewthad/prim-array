@@ -13,6 +13,7 @@ module Data.Primitive.PrimArray
     -- * Allocation
   , newPrimArray
   , emptyPrimArray
+  , singletonPrimArray
     -- * Element Access
   , readPrimArray
   , writePrimArray
@@ -72,6 +73,13 @@ emptyPrimArray :: PrimArray a
 emptyPrimArray = runST $ primitive $ \s0# -> case newByteArray# 0# s0# of
   (# s1#, arr# #) -> case unsafeFreezeByteArray# arr# s1# of
     (# s2#, arr'# #) -> (# s2#, PrimArray arr'# #)
+
+singletonPrimArray :: Prim a => a -> PrimArray a
+singletonPrimArray a = runST $ do
+  arr <- newPrimArray 1
+  writePrimArray arr 0 a
+  unsafeFreezePrimArray arr
+
 
 newPrimArray :: forall m a. (PrimMonad m, Prim a) => Int -> m (MutablePrimArray (PrimState m) a)
 {-# INLINE newPrimArray #-}
