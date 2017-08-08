@@ -3,6 +3,7 @@
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-# OPTIONS_GHC -Wall #-}
 
@@ -35,12 +36,13 @@ module Data.Primitive.PrimArray
   ) where
 
 import GHC.Prim
-import GHC.Exts (isTrue#)
+import GHC.Exts (isTrue#,IsList(..))
 import GHC.Int
 import GHC.Ptr
 import Data.Primitive
 import Control.Monad.Primitive
 import Control.Monad.ST
+import qualified Data.List as L
 import qualified Data.Primitive.Types as PT
 
 -- | Primitive arrays
@@ -54,6 +56,35 @@ instance (Eq a, Prim a) => Eq (PrimArray a) where
    where 
    loop !i | i < 0 = True
            | otherwise = indexPrimArray a1 i == indexPrimArray a2 i && loop (i-1)
+
+instance Prim a => IsList (PrimArray a) where
+  type Item (PrimArray a) = a
+  fromList xs = primArrayFromList (L.length xs) xs
+  fromListN = primArrayFromList
+  toList = primArrayToList
+
+primArrayFromList :: forall a. Prim a => Int -> [a] -> PrimArray a
+primArrayFromList len vs = runST run where
+  run :: forall s. ST s (PrimArray a)
+  run = do
+    arr <- newPrimArray len
+    let go :: [a] -> Int -> ST s ()
+        go !xs !ix = case xs of
+          [] -> return ()
+          a : as -> do
+            writePrimArray arr ix a
+            go as (ix + 1)
+    go vs 0
+    unsafeFreezePrimArray arr
+
+primArrayToList :: forall a. Prim a => PrimArray a -> [a]
+primArrayToList arr = go 0 where
+  !len = sizeofPrimArray arr
+  go :: Int -> [a]
+  go !ix = if ix < len
+    then indexPrimArray arr ix : go (ix + 1)
+    else []
+
 
 -- It is actually possible to write this without the Prim constraint
 -- on the type variable a. You just copy the byte arrays using
