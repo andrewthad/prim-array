@@ -53,15 +53,18 @@ data MutablePrimArray s a = MutablePrimArray (MutableByteArray# s)
 
 instance (Eq a, Prim a) => Eq (PrimArray a) where
   a1 == a2 = sizeofPrimArray a1 == sizeofPrimArray a2 && loop (sizeofPrimArray a1 - 1)
-   where 
-   loop !i | i < 0 = True
-           | otherwise = indexPrimArray a1 i == indexPrimArray a2 i && loop (i-1)
+    where 
+    loop !i | i < 0 = True
+            | otherwise = indexPrimArray a1 i == indexPrimArray a2 i && loop (i-1)
 
 instance Prim a => IsList (PrimArray a) where
   type Item (PrimArray a) = a
   fromList xs = primArrayFromList (L.length xs) xs
   fromListN = primArrayFromList
   toList = primArrayToList
+
+instance (Prim a, Show a) => Show (PrimArray a) where
+  showsPrec p = showsPrec p . primArrayToList
 
 primArrayFromList :: forall a. Prim a => Int -> [a] -> PrimArray a
 primArrayFromList len vs = runST run where
