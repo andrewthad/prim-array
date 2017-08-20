@@ -147,7 +147,7 @@ copyMutablePrimArray :: forall m a.
   -> Int -- ^ offset into destination array
   -> MutablePrimArray (PrimState m) a -- ^ source array
   -> Int -- ^ offset into source array
-  -> Int -- ^ number of bytes to copy
+  -> Int -- ^ number of elements to copy
   -> m ()
 {-# INLINE copyMutablePrimArray #-}
 copyMutablePrimArray (MutablePrimArray dst#) (I# doff#) (MutablePrimArray src#) (I# soff#) (I# n#)
@@ -166,7 +166,7 @@ copyPrimArray :: forall m a.
   -> Int -- ^ offset into destination array
   -> PrimArray a -- ^ source array
   -> Int -- ^ offset into source array
-  -> Int -- ^ number of bytes to copy
+  -> Int -- ^ number of elements to copy
   -> m ()
 {-# INLINE copyPrimArray #-}
 copyPrimArray (MutablePrimArray dst#) (I# doff#) (PrimArray src#) (I# soff#) (I# n#)
@@ -228,7 +228,7 @@ setPrimArray
 setPrimArray (MutablePrimArray dst#) (I# doff#) (I# sz#) x
   = primitive_ (PT.setByteArray# dst# doff# sz# x)
 
--- | Get the size of the mutable array.
+-- | Get the size of the mutable array in elements.
 getSizeofMutablePrimArray :: forall m a. (PrimMonad m, Prim a)
   => MutablePrimArray (PrimState m) a -- ^ array
   -> m Int
@@ -267,6 +267,7 @@ indexPrimArray :: forall a. Prim a => PrimArray a -> Int -> a
 {-# INLINE indexPrimArray #-}
 indexPrimArray (PrimArray arr#) (I# i#) = indexByteArray# arr# i#
 
+-- | Get the size of the array in elements.
 sizeofPrimArray :: forall a. Prim a => PrimArray a -> Int
 {-# INLINE sizeofPrimArray #-}
 sizeofPrimArray (PrimArray arr#) = I# (quotInt# (sizeofByteArray# arr#) (sizeOf# (undefined :: a)))
