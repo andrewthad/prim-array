@@ -1,5 +1,5 @@
 name: prim-array
-version: 0.2.1
+version: 0.2.2
 synopsis: Primitive byte array with type variable
 homepage: https://github.com/andrewthad/prim-array#readme
 license: BSD3
