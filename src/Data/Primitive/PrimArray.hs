@@ -42,6 +42,8 @@ import GHC.Ptr
 import Data.Primitive
 import Control.Monad.Primitive
 import Control.Monad.ST
+import Data.Semigroup (Semigroup(..))
+import qualified Data.Semigroup as SG
 import qualified Data.List as L
 import qualified Data.Primitive.Types as PT
 
@@ -88,19 +90,24 @@ primArrayToList arr = go 0 where
     then indexPrimArray arr ix : go (ix + 1)
     else []
 
+appendPrimArray :: Prim a => PrimArray a -> PrimArray a -> PrimArray a 
+appendPrimArray a b = runST $ do
+  let szA = sizeofPrimArray a
+  let szB = sizeofPrimArray b
+  c <- newPrimArray (szA + szB)
+  copyPrimArray c 0 a 0 szA
+  copyPrimArray c szA b 0 szB
+  unsafeFreezePrimArray c
+
+instance Prim a => Semigroup (PrimArray a) where
+  (<>) = appendPrimArray
 
 -- It is actually possible to write this without the Prim constraint
 -- on the type variable a. You just copy the byte arrays using
 -- more primitive operations.
 instance Prim a => Monoid (PrimArray a) where
   mempty = emptyPrimArray
-  mappend a b = runST $ do
-    let szA = sizeofPrimArray a
-    let szB = sizeofPrimArray b
-    c <- newPrimArray (szA + szB)
-    copyPrimArray c 0 a 0 szA
-    copyPrimArray c szA b 0 szB
-    unsafeFreezePrimArray c
+  mappend = (SG.<>)
 
 emptyPrimArray :: PrimArray a
 {-# NOINLINE emptyPrimArray #-}
